@@ -14,6 +14,10 @@ const search_content = ref('')
 const clear_content = () => {
   search_content.value = ''
 }
+// 展开收起面板
+const toggleCollapse = () => {
+  isCollapse.value = !isCollapse.value
+}
 </script>
 <template>
   <div class="layout">
@@ -39,8 +43,8 @@ const clear_content = () => {
       </el-header>
       <el-container class="body">
         <!-- 左侧导航 -->
-        <el-aside width="200px" class="menu">
-          <el-menu default-active="2"  :collapse="isCollapse" :router="true">
+        <el-aside :width="isCollapse ? '70px' : '200px'" class="menu">
+          <el-menu :default-active="$route.path" :collapse="isCollapse" :router="true">
             <el-menu-item index="/home">
               <el-icon>
                 <Promotion />
@@ -59,8 +63,20 @@ const clear_content = () => {
               </el-icon>
               <span>用户</span>
             </el-menu-item>
+            <el-menu-item @click="toggleCollapse">
+              <!-- <el-button> -->
+              <el-icon v-if="!isCollapse">
+                <ArrowLeftBold />
+              </el-icon>
+              <el-icon v-else>
+                <ArrowRightBold />
+              </el-icon>
+              <span>{{ isCollapse ? '展开' : '收起' }}</span>
+              <!-- </el-button> -->
+            </el-menu-item>
           </el-menu>
         </el-aside>
+
         <!-- 主要内容 -->
         <el-main>
           <router-view></router-view>
@@ -75,9 +91,9 @@ const clear_content = () => {
 @head-height: 70px;
 
 .layout {
-  padding: 20px 80px;
+  padding: 20px 50px;
   width: 100%;
-  height: 100%;
+  height: 100vh;
 
   :deep(.el-container) {
     height: 100%;
@@ -133,12 +149,13 @@ const clear_content = () => {
 
       .menu {
         height: 100%;
+
         // 不知道为什么右边框去不掉
         :deep(.el-aside) .el-menu {
           border-right: none;
         }
       }
-      
+
       :deep(.el-main) {
         padding: 0px 20px;
         height: 100%;

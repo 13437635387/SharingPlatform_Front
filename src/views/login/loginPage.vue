@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
-import type { TabsPaneContext } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { addUser } from '@/api/user'
+import { userLoginService, userRegisterService } from '@/api/user'
 
 
 const userStore = useUserStore()
@@ -13,9 +12,7 @@ const userStore = useUserStore()
 // 标题栏
 const activeName = ref('first')
 
-const handleClick = (tab: TabsPaneContext, event: Event) => {
-  console.log(tab, event)
-}
+
 // 登录
 const loginFormRef = ref<FormInstance>()
 const registerFormRef = ref<FormInstance>()
@@ -63,13 +60,14 @@ const changeActiveName = () => {
 const login = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
   await formEl.validate()
-  if (formModel.value.username === userStore.username && formModel.value.password === userStore.password) {
-    userStore.remember = formModel.value.remember
-    ElMessage.success('登录成功！')
-    router.push({ path: '/' })
-  } else {
-    ElMessage.error('用户名或密码错误')
-  }
+  const res = await userLoginService({
+    username: formModel.value.username,
+    password: formModel.value.password
+  })
+  console.log(res);
+  userStore.remember = formModel.value.remember//记住登录状态 
+  ElMessage.success('登录成功！')
+  router.push({ path: '/' })
 }
 
 const register = async (formEl: FormInstance | undefined) => {
@@ -78,12 +76,12 @@ const register = async (formEl: FormInstance | undefined) => {
   userStore.username = formModel.value.username
   userStore.password = formModel.value.password
   activeName.value = 'first'
-  const res = await addUser({
+  const res = await userRegisterService({
     username: formModel.value.username,
     password: formModel.value.password
   })
   console.log(res);
-  
+
   ElMessage.success('注册成功！')
 }
 
@@ -105,7 +103,7 @@ onMounted(() => {
 </script>
 <template>
   <div class="login">
-    <el-tabs v-model="activeName" type="border-card" class="demo-tabs" @edit="handleClick">
+    <el-tabs v-model="activeName" type="border-card" class="demo-tabs">
       <!-- 登录 -->
       <el-tab-pane label="登录" name="first">
 
