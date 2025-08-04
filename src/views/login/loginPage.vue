@@ -66,6 +66,9 @@ const login = async (formEl: FormInstance | undefined) => {
   })
   console.log(res);
   userStore.remember = formModel.value.remember//记住登录状态 
+  userStore.username = formModel.value.username
+  userStore.password = formModel.value.password
+  userStore.token = res.token
   ElMessage.success('登录成功！')
   router.push({ path: '/' })
 }

@@ -2,13 +2,31 @@
 import { useUserStore } from '@/stores/user';
 import { ref, reactive } from 'vue';
 import { ElMessage } from 'element-plus'
-// import type { UploadProps } from 'element-plus'
+import type { UploadProps } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue';
 import type { FormModel } from '@/types/user';
 import type { FormInstance, FormRules } from 'element-plus'
+import { updateUserInfoService } from '@/api/user';
 
 
 const userStore = useUserStore()
+
+//左侧头像上传
+const handleAvatarSuccess: UploadProps['onSuccess'] = (
+  response,
+  // uploadFile
+) => {
+  console.log('上传成功：', response);
+}
+
+const handleError: UploadProps['onError'] = (error) => {
+  console.error('上传失败', error)
+}
+
+const uploadImg = {
+  "Authorization": userStore.token
+}
+
 
 // //左侧头像上传
 // const imageUrl = ref('')
@@ -30,6 +48,7 @@ const userStore = useUserStore()
 //   }
 //   return true
 // }
+
 
 //右侧 修改个人资料
 const formRef = ref<FormInstance>()
@@ -62,6 +81,12 @@ const rules = reactive<FormRules<FormModel>>({
 const confirm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
   await formEl.validate()
+
+  const res = await updateUserInfoService({
+    username: formModel.value.username,
+    password: formModel.value.password
+  })
+  console.log(res);
   userStore.username = formModel.value.username
   userStore.password = formModel.value.password
   ElMessage.success('修改成功！')
@@ -79,8 +104,9 @@ const confirm = async (formEl: FormInstance | undefined) => {
     <div class="left">
       <div class="userinfo">
         <div class="pic">
-          <el-upload class="avatar-uploader" action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
-            :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
+          <el-upload class="avatar-uploader" action="http://127.0.0.1:8080/my/userinfo/updateAvatar"
+            :show-file-list="false" :on-success="handleAvatarSuccess" :on-error="handleError" :headers="uploadImg"
+            name="avatar">
             <img :src="userStore.userPic" class="avatar" />
             <!-- 这里要实现鼠标移入背景变暗的效果，方法是使用一个图层遮盖 -->
             <div class="cover"></div>
@@ -185,7 +211,6 @@ const confirm = async (formEl: FormInstance | undefined) => {
     flex: 1 1 300px; // 响应式宽度，最小300px
     min-width: 350px;
     height: 100%;
-    // background-color: rgb(241, 233, 233);
   }
 
   .left {

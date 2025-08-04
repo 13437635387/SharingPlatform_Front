@@ -13,12 +13,12 @@ import { ElMessage } from "element-plus";
 // 基地址
 const baseURL: string = "http://localhost:8080";
 
-// 返回类型结构
-// type apiResult<T> = {
+// // 返回类型结构
+// interface apiResult<T = any> {
 //   status: number;
 //   message: string;
 //   data: T;
-// };
+// }
 
 const userStore = useUserStore();
 
@@ -29,11 +29,16 @@ const instance: AxiosInstance = axios.create({
 // 请求拦截器
 instance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (userStore.getToken()) {
+    console.log(userStore.token);
+
+    if (userStore.token) {
+      console.log("eee");
+
       config.headers = {
         ...config.headers,
-        Authorization: `Bearer ${userStore.getToken()}`,
+        Authorization: userStore.token,
       } as AxiosRequestHeaders;
+      console.log(config.headers.Authorization);
     }
     return config;
   },
