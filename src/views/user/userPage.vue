@@ -6,17 +6,21 @@ import type { UploadProps } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue';
 import type { FormModel } from '@/types/user';
 import type { FormInstance, FormRules } from 'element-plus'
-import { updateUserInfoService } from '@/api/user';
+import { updateUserInfoService, getUserAvatarService } from '@/api/user';
 
 
 const userStore = useUserStore()
 
 //左侧头像上传
-const handleAvatarSuccess: UploadProps['onSuccess'] = (
+const handleAvatarSuccess: UploadProps['onSuccess'] = async (
   response,
-  // uploadFile
 ) => {
   console.log('上传成功：', response);
+  const res = await getUserAvatarService();
+  console.log(res);
+  userStore.userPic = 'http://localhost:8080' + res.data
+  console.log(userStore.userPic);
+
 }
 
 const handleError: UploadProps['onError'] = (error) => {
@@ -107,7 +111,7 @@ const confirm = async (formEl: FormInstance | undefined) => {
           <el-upload class="avatar-uploader" action="http://127.0.0.1:8080/my/userinfo/updateAvatar"
             :show-file-list="false" :on-success="handleAvatarSuccess" :on-error="handleError" :headers="uploadImg"
             name="avatar">
-            <img :src="userStore.userPic" class="avatar" />
+            <el-image :src="userStore.userPic" class="avatar" fit="cover" />
             <!-- 这里要实现鼠标移入背景变暗的效果，方法是使用一个图层遮盖 -->
             <div class="cover"></div>
             <el-icon class="addIcon">
@@ -149,54 +153,6 @@ const confirm = async (formEl: FormInstance | undefined) => {
 
     </div>
   </div>
-  <!-- <div class="user">
-    <div class="left">
-      <div class="userinfo">
-        <div class="pic">
-          <el-upload class="avatar-uploader" action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
-            :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
-            <img :src="userStore.userPic" class="avatar" />
-            这里要实现鼠标移入背景变暗的效果，方法是使用一个图层遮盖
-            <div class="cover"></div>
-            <el-icon class="addIcon">
-              <Plus />
-            </el-icon>
-          </el-upload>
-
-        </div>
-        <div class="info">
-          <p style="font-size: 20px;color: #545151;">{{ userStore.username }}</p>
-          <p style="font-size: 15px;">{{ userStore.password }}</p>
-        </div>
-      </div>
-    </div>
-    <div class="right">
-      <el-card class="setting">
-        <template #header>
-          <div class="card-header">
-            <h2>修改个人资料</h2>
-          </div>
-        </template>
-<el-form ref="formRef" :model="formModel" :rules="rules" status-icon size="large">
-  <el-form-item prop="username">
-    <el-input v-model="formModel.username" placeholder="请输入用户名" />
-  </el-form-item>
-  <el-form-item prop="password">
-    <el-input v-model="formModel.password" type="password" placeholder="请输入密码" />
-  </el-form-item>
-  <el-form-item prop="repassword">
-    <el-input v-model="formModel.repassword" type="password" placeholder="请再次输入密码" />
-  </el-form-item>
-
-  <el-form-item>
-    <el-button style="width: 100%; margin-top: 20px" type="primary" @click="confirm(formRef)">确认</el-button>
-  </el-form-item>
-
-</el-form>
-</el-card>
-</div>
-
-</div> -->
 </template>
 <style lang="less" scoped>
 .user {
@@ -240,9 +196,9 @@ const confirm = async (formEl: FormInstance | undefined) => {
 
           .avatar {
             width: 100%;
+            height: 100%;
             border-radius: 50%;
             border: 1px solid rgb(201, 123, 123, green, blue);
-
           }
 
           .cover {

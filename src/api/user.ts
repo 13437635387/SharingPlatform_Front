@@ -13,3 +13,8 @@ export const userLoginService = (data: object) => {
 export const updateUserInfoService = (data: object) => {
   return http.post("/my/userinfo/update", data);
 };
+
+//获取用户头像
+export const getUserAvatarService = () => {
+  return http.get("/my/userinfo/getAvatar");
+};
