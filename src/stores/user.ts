@@ -1,3 +1,4 @@
+import { ElMessage } from "element-plus";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
@@ -10,6 +11,7 @@ export const useUserStore = defineStore(
     const userPic = ref(
       "https://ts1.tc.mm.bing.net/th/id/OIP-C.UyaBji0AU_6M3VDA2F1RvgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
     );
+    const userId = ref();
     const token = ref("");
     // 清空用户信息：退出登录
     const logout = () => {
@@ -19,12 +21,15 @@ export const useUserStore = defineStore(
       userPic.value =
         "https://ts1.tc.mm.bing.net/th/id/OIP-C.UyaBji0AU_6M3VDA2F1RvgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3";
       token.value = "";
+      userId.value = "";
+      ElMessage.success("已退出!");
     };
     return {
       username,
       password,
       remember,
       userPic,
+      userId,
       token,
       logout,
     };

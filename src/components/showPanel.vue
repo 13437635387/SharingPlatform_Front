@@ -2,12 +2,14 @@
 import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next'
 import 'vue-waterfall-plugin-next/dist/style.css'
 import { ref } from 'vue';
+import { getUserInfoByIdService } from '@/api/user';
 
 type listType = {
   id: number,
   title: string,
   url: string,
-  content: string
+  content: string,
+  user_id: number
 }
 const props = defineProps<{ list: listType[] }>()
 
@@ -36,13 +38,20 @@ const breakpoints = {
 //是否展示详细内容
 const isShowDetail = ref(false)
 const idIndex = ref(0)//找到当前细节项的id的下标
-const showDetail = (id: number) => {
+const detailUserPic = ref('')
+const detailUserName = ref('')
+const showDetail = async (id: number) => {
   props.list.forEach((item, index) => {
     if (item.id === id) {
       idIndex.value = index
     }
   })
   isShowDetail.value = true
+  // console.log(props.list[idIndex.value].id);
+
+  const res = await getUserInfoByIdService(props.list[idIndex.value].user_id)
+  detailUserPic.value = 'http://localhost:8080' + res.data.user_pic
+  detailUserName.value = res.data.username
 }
 
 </script>
@@ -63,7 +72,11 @@ const showDetail = (id: number) => {
           height="100%" />
       </div>
       <div class="right">
-        <div v-html="props.list[idIndex].content"></div>
+        <div class="user-info">
+          <el-avatar size="default" :src="detailUserPic"></el-avatar>
+          <span class="user-name">{{ detailUserName }}</span>
+        </div>
+        <div v-html="props.list[idIndex].content" class="content"></div>
       </div>
     </el-dialog>
   </div>
@@ -104,15 +117,30 @@ const showDetail = (id: number) => {
       }
 
       .right {
-        // background-color: rgb(250, 250, 250);
         padding: 0px 5px;
         width: 50%;
         height: 100%;
-        // line-height: 100%;
         text-align: center;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        // justify-content: center;
+
+        .user-info {
+          width: 100%;
+          height: 50px;
+          background-color: rgb(252, 252, 252);
+          justify-content: center;
+          display: flex;
+          align-items: center;
+          gap: 20px; //flex盒子子元素之间的间距
+        }
+
+        .content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
       }
     }
   }

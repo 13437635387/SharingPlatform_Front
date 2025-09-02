@@ -6,6 +6,7 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { userLoginService, userRegisterService } from '@/api/user'
 // import type { userTokenType } from '@/types/user'
+import { getUserInfoService } from '@/api/user'
 
 type userTokenType = {
   status: number;
@@ -70,7 +71,6 @@ const login = async (formEl: FormInstance | undefined) => {
     username: formModel.value.username,
     password: formModel.value.password
   })
-  console.log(res);
   userStore.remember = formModel.value.remember//记住登录状态 
   userStore.username = formModel.value.username
   userStore.password = formModel.value.password
@@ -78,6 +78,11 @@ const login = async (formEl: FormInstance | undefined) => {
   userStore.token = (res as unknown as userTokenType).token//报错说要先转换为unknown,虽然不知道为什么但是改了就不标红了
   ElMessage.success('登录成功！')
   router.push({ path: '/home' })
+
+  //一登录成功就要获取用户信息
+  const res2 = await getUserInfoService();
+  userStore.userId = res2.data.id;
+  userStore.userPic = 'http://localhost:8080' + res2.data.user_pic;
 }
 
 const register = async (formEl: FormInstance | undefined) => {

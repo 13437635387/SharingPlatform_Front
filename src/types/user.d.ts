@@ -4,3 +4,15 @@ export type FormModel = {
   password: string;
   repassword: string;
 };
+
+// 获取用户信息返回的格式
+export type UserInfoType = {
+  data: {
+    id: number;
+    username: string;
+    user_pic: string;
+    password: string;
+  };
+  message: string;
+  status: number;
+};

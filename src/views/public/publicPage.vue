@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import type { QuillEditor as QuillEditorType } from '@vueup/vue-quill';
 import { ElMessage, type UploadProps } from 'element-plus'
 import { addArticleService } from '@/api/article'
+import { useUserStore } from '@/stores/user'
 
 // 表单
 const ruleFormRef = ref()
@@ -41,6 +42,7 @@ const handleChange: UploadProps['onChange'] = (uploadFile) => {
 const editor = ref<InstanceType<typeof QuillEditorType> | null>(null)
 
 // 提交表单
+const userStore = useUserStore()
 const submitForm = async () => {
   await ruleFormRef.value.validate()
   //转变为FormData格式
@@ -48,6 +50,7 @@ const submitForm = async () => {
   for (const key in formData.value) {
     fd.append(key, (formData.value as Record<string, string | Blob>)[key])
   }
+  fd.append('user_id', userStore.userId)//追加用户id
   await addArticleService(fd)
   ElMessage.success('新增成功!')
   formData.value = { title: '', imgURL: new Blob(), content: '' }

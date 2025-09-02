@@ -8,7 +8,7 @@ import type { FormModel } from '@/types/user';
 import type { FormInstance, FormRules } from 'element-plus'
 import { updateUserInfoService, getUserAvatarService } from '@/api/user';
 import http from '@/util/http';
-
+// import { getUserInfoService } from '@/api/user';
 
 const userStore = useUserStore()
 
