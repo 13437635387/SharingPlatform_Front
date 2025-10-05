@@ -19,15 +19,6 @@ type currentDetailInfoType = {
 }
 
 const props = defineProps<{ panelType: string, currentDetailInfo?: currentDetailInfoType }>()
-// const currentDetailInfo = ref({
-//   user_pic: '',
-//   username: '',
-//   user_id: 0,
-//   id: 0,
-//   title: '',
-//   url: '',
-//   content: ''
-// })
 // 表单
 const ruleFormRef = ref()
 const formData = ref<{
