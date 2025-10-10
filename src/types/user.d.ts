@@ -16,3 +16,11 @@ export type UserInfoType = {
   message: string;
   status: number;
 };
+
+//分片格式
+export type FileChunkType = {
+  chunk: Blob;
+  fileHash: string;
+  chunkIndex: string;
+  fileName: string;
+};

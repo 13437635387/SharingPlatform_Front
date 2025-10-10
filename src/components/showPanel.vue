@@ -109,7 +109,8 @@ const drawer = ref(false)
     <Waterfall :list="props.list" :breakpoints="breakpoints" :gutter="20">
       <template #default="{ item }">
         <div class="card" @click="showDetail(item.id)">
-          <LazyImg :url="`http://localhost:8080${item.url}`" alt="" class="pic" />
+          <LazyImg :url="`http://localhost:8080${item.url}`" alt="" class="pic" v-if="!item.url.includes('.')" />
+          <video :src="item.url" v-else></video>
           <p class="title">{{ item.title }}</p>
         </div>
       </template>
@@ -117,8 +118,7 @@ const drawer = ref(false)
     <!-- 详情内容 -->
     <el-dialog v-model="isShowDetail" :show-close="false" :before-close="handleClose">
       <div class="left">
-        <el-image :src="currentDetailInfo.url" alt="图片不见啦！" fit="cover" style="width: 100%;"
-          height="100%" />
+        <el-image :src="currentDetailInfo.url" alt="图片不见啦！" fit="cover" style="width: 100%;" height="100%" />
       </div>
       <div class="right">
         <div class="user-info">

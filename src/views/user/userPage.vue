@@ -139,7 +139,8 @@ getUserArticles()
         </el-form>
       </el-card>
       <div class="userWorks" v-else>
-        <showPanel :list="userArticleList" :isUser="true" @reloadList="getUserArticles"></showPanel>
+        <el-empty v-if="!userArticleList.length"></el-empty>
+        <showPanel :list="userArticleList" :isUser="true" @reloadList="getUserArticles" v-else></showPanel>
       </div>
     </div>
   </div>

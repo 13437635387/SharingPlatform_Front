@@ -2,11 +2,14 @@
 import { Plus } from '@element-plus/icons-vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import { ref, toRef, toRefs, watch } from 'vue'
+import { ref, toRaw, toRef, toRefs, watch } from 'vue'
 import type { QuillEditor as QuillEditorType } from '@vueup/vue-quill';
 import { ElMessage, type UploadProps } from 'element-plus'
-import { addArticleService, editArticleService } from '@/api/article'
+import { addArticleService, addArticleVideoService, addLargeFileArticleService, checkFileRequest, editArticleService, mergeRequest } from '@/api/article'
 import { useUserStore } from '@/stores/user'
+import SparkMD5 from 'spark-md5'
+import type { FileChunkType } from '@/types/user'
+import axios from 'axios';
 
 type currentDetailInfoType = {
   user_pic: string,
@@ -57,55 +60,223 @@ const onEditorBlur = () => {
   ruleFormRef.value?.validateField('content')
 }
 
-//图片上传
-const backupURL = ref('')//图片回显用
+//文件上传（图片or视频）
+const backupURL = ref('')//图片回显
+const isPic = ref(true)//是否是图片
+const videoUploadFile = ref()//视频文件
 const handleChange: UploadProps['onChange'] = (uploadFile) => {
-  formData.value.imgURL = uploadFile.raw as Blob
-  backupURL.value = URL.createObjectURL(uploadFile.raw as Blob);
+  console.log('uploadFile:', uploadFile);
+  if (uploadFile.raw!.type.startsWith('image/')) {
+    isPic.value = true
+    formData.value.imgURL = uploadFile.raw as Blob
+  } else {
+    isPic.value = false
+    videoUploadFile.value = uploadFile.raw
+  }
+  const fr = new FileReader();
+  fr.readAsDataURL(uploadFile.raw as Blob);
+  fr.onload = () => {
+    backupURL.value = fr.result as string;
+  };
 }
 
 // 设置编辑器
 const editor = ref<InstanceType<typeof QuillEditorType> | null>(null)
 
-// 提交表单
 const userStore = useUserStore()
-const submitForm = async () => 
-{
-  console.log(formData.value);
-  
-  await ruleFormRef.value.validate()
-  //转变为FormData格式
-  const fd = new FormData()
-  for (const key in formData.value) {
-    fd.append(key, (formData.value as unknown as Record<string, string | Blob>)[key])
-  }
-  fd.append('user_id', userStore.userId)//追加用户id
-  //发布和编辑分开处理
-  if (props.panelType === 'public') {
-    await addArticleService(fd)
-    ElMessage.success('新增成功!')
-  }
-  if (props.panelType === 'edit') {
-    if (props.currentDetailInfo && props.currentDetailInfo.id !== undefined) {
-      fd.append('id', String(props.currentDetailInfo.id))
-      const res = await editArticleService(fd)
-      console.log('res:', res);
-      ElMessage.success('编辑成功!')
-      // 刷新页面
-      window.location.reload()
+// 大文件分片上传
+const CHUNK_SIZE = 1024 * 1024  // 1MB
+const fileChunksList = ref<Blob[]>([])//原始分片数组
+const fileDetailList = ref<FileChunkType[]>([])//分片详细信息数组
+
+
+// 计算文件哈希(增量算法，完整计算分片)
+const sparkHash = () => {
+  return new Promise((resolve) => {
+    const spark = new SparkMD5.ArrayBuffer()
+    function _read(i: number) {
+
+      if (i >= fileChunksList.value.length) {
+        resolve(spark.end())
+        return
+      }
+      const blob = fileChunksList.value[i]
+      const fileReader = new FileReader()
+      fileReader.readAsArrayBuffer(blob)
+      fileReader.onload = (e) => {
+        spark.append(e.target?.result as ArrayBuffer)
+        _read(i + 1)
+      }
     }
+    _read(0)
+  })
+}
+
+const uploadToBehind = async () => {
+  // 构造FormDatas数组
+  const formDatas = fileDetailList.value.map(item => {
+    const formData = new FormData()
+    formData.append('fileHash', item.fileHash)
+    formData.append('chunkIndex', item.chunkIndex)
+    formData.append('chunk', item.chunk)
+    formData.append('fileName', item.fileName)
+    return formData
+  })
+  console.log(formDatas);
+  // 发送请求
+  const max_count = 6 // 最大并发数
+  let index = 0
+  const taskPool: Promise<any>[] = []//请求队列
+
+  while (index < formDatas.length) {
+    const task = addArticleVideoService(formDatas[index])
+      .then(res => {
+        console.log('res:', res);
+        console.log(res.data);
+        // if(formDatas)
+        const id = taskPool.findIndex(item => item === task)
+        if (id > -1) {
+          taskPool.splice(id, 1)
+        }
+        return res.data
+      }).catch(err => {
+        console.log(err);
+        const id = taskPool.findIndex(item => item === task)
+        if (id > -1) {
+          taskPool.splice(id, 1)
+        }
+        throw new Error('上传失败')
+      })
+    taskPool.push(task)
+    if (taskPool.length === max_count) {
+      await Promise.race(taskPool)
+    }
+    index++
+  }
+  await Promise.all(taskPool)
+  console.log('所有分片上传完成');
+
+  // 发送切片合并请求
+  await mergeRequest({
+    size: CHUNK_SIZE,
+    fileHash: fileDetailList.value[0].fileHash,
+    fileName: fileDetailList.value[0].fileName,
+  })
+
+  // 合并完成后添加文章
+  const res = await addLargeFileArticleService({
+    fileHash: fileDetailList.value[0].fileHash,
+    fileName: fileDetailList.value[0].fileName,
+    title: formData.value.title,
+    user_id: userStore.userId,
+    content: formData.value.content,
+  })
+  console.log(res);
+
+}
+
+// 秒传
+const verify = async (fileHash: string, fileName: string) => {
+  const res = await checkFileRequest({
+    fileHash,
+    fileName,
+  })
+  return res.data.isExists
+}
+
+const videoUpload = async () => {
+  fileChunksList.value = []//清空分片数组
+  const rawValue = toRaw(videoUploadFile.value)
+  console.log(rawValue);
+
+  const totalFileSize = rawValue.size // 文件总大小
+  let current = 0// 当前分片位置
+  console.log('fileChunksList:', fileChunksList.value);
+
+  while (current < totalFileSize) {
+    fileChunksList.value.push(rawValue.slice(current, current + CHUNK_SIZE))
+    current += CHUNK_SIZE
+  }
+  // 计算哈希
+  const fileHash = await sparkHash()
+  console.log('fileHash', fileHash);
+
+  // 秒传   ---如果改文件已经上传过就不再分片，直接添加文章
+  const isExists = await verify(fileHash as string, rawValue.name)
+  if (isExists) {
+    const res = await addLargeFileArticleService({
+      fileHash: fileHash,
+      fileName: rawValue.name,
+      title: formData.value.title,
+      user_id: userStore.userId,
+      content: formData.value.content,
+    })
+    console.log(res);
+    formData.value = { title: '', imgURL: new Blob(), content: '' }
+    backupURL.value = '' // 清空图片回显
+    editor.value?.setHTML('')//清空编辑器内容
+    ElMessage.success(res.message)
+  } else {
+    // 构造详细分片数组
+    fileDetailList.value = fileChunksList.value.map((item, index) => {
+      return {
+        chunk: item, //分片内容
+        fileHash: fileHash as string, //文件哈希，强制类型为string
+        chunkIndex: `${fileHash}-${index}`, //分片索引哈希
+        fileName: rawValue.name, //文件名
+      }
+    })
+    // 上传视频切片
+    uploadToBehind()
   }
 
-  formData.value = { title: '', imgURL: new Blob(), content: '' }
-  backupURL.value = '' // 清空图片回显
-  editor.value?.setHTML('')//清空编辑器内容
+
+}
+
+// 提交表单
+const submitForm = async () => {
+  await ruleFormRef.value.validate()
+  // 如果是图像直接提交
+  if (isPic.value) {
+    //转变为FormData格式
+    const fd = new FormData()
+    for (const key in formData.value) {
+      fd.append(key, (formData.value as unknown as Record<string, string | Blob>)[key])
+    }
+    fd.append('user_id', userStore.userId)//追加用户id
+    // fd.append('isPic', String(isPic.value))//是否是图片
+    //发布和编辑分开处理
+    if (props.panelType === 'public') {
+      await addArticleService(fd)
+      ElMessage.success('新增成功!')
+    }
+    if (props.panelType === 'edit') {
+      if (props.currentDetailInfo && props.currentDetailInfo.id !== undefined) {
+        fd.append('id', String(props.currentDetailInfo.id))
+        const res = await editArticleService(fd)
+        console.log('res:', res);
+        ElMessage.success('编辑成功!')
+        // 刷新页面
+        window.location.reload()
+      }
+    }
+
+    formData.value = { title: '', imgURL: new Blob(), content: '' }
+    videoUploadFile.value = new File([], '') // 清空视频文件
+    backupURL.value = '' // 清空文件回显
+    editor.value?.setHTML('')//清空编辑器内容
+  }
+  // 如果是视频，使用大文件分片上传
+  else {
+    videoUpload()
+  }
 }
 
 //props直接结构会丢失相应属性的响应式，而用watch可以监听到变化，为防止formData无法通过currentDetailInfo初始化，使用watch监听props变化
 watch(() => props.currentDetailInfo, (newVal) => {
   if (newVal) {
     // 处理数据初始化
-      Object.assign(formData.value, {
+    Object.assign(formData.value, {
       title: newVal.title,
       content: newVal.content,
     })
@@ -121,17 +292,32 @@ watch(() => props.currentDetailInfo, (newVal) => {
         <el-input v-model="formData.title" placeholder="请输入标题" maxlength="15" show-word-limit />
       </el-form-item>
       <!-- 图片 -->
-      <el-form-item label="文章封面" prop="imgURL">
-        <el-upload :show-file-list="false" class="avatar-uploader" :auto-upload="false" @change="handleChange">
-          <img v-if="backupURL" :src="backupURL" class="avatar" />
-          <el-icon v-else class="avatar-uploader-icon">
-            <Plus />
-          </el-icon>
-        </el-upload>
+      <el-form-item label="文章配图" prop="imgURL">
+        <div style="display: flex; align-items: flex-start;">
+
+
+          <el-upload :show-file-list="false" class="avatar-uploader" :auto-upload="false" @change="handleChange">
+            <template #trigger>
+              <el-button type="primary" plain>上传文件</el-button>
+            </template>
+          </el-upload>
+          <div class="avatar-show" style="margin-right: 16px;">
+            <div class="avatar" v-if="backupURL">
+              <img :src="backupURL" style="width: 100%;
+              height: 100%;" v-if="isPic" />
+              <video :src="backupURL" v-else style="width: 100%;
+              height: 100%;" controls></video>
+            </div>
+            <el-icon v-else class="avatar-uploader-icon">
+              <Plus />
+            </el-icon>
+          </div>
+        </div>
       </el-form-item>
       <el-form-item label="文章内容" prop="content">
         <div class="editor">
-          <QuillEditor theme="snow" v-model:content="formData.content" contentType="html" ref="editor"  @blur="onEditorBlur">
+          <QuillEditor theme="snow" v-model:content="formData.content" contentType="html" ref="editor"
+            @blur="onEditorBlur">
           </QuillEditor>
         </div>
       </el-form-item>
@@ -158,7 +344,8 @@ watch(() => props.currentDetailInfo, (newVal) => {
       </el-form-item>
       <el-form-item label="文章内容" prop="content">
         <div class="editor">
-          <QuillEditor theme="snow" v-model:content="formData.content" contentType="html" ref="editor" @blur="onEditorBlur">
+          <QuillEditor theme="snow" v-model:content="formData.content" contentType="html" ref="editor"
+            @blur="onEditorBlur">
           </QuillEditor>
         </div>
       </el-form-item>
@@ -179,24 +366,41 @@ watch(() => props.currentDetailInfo, (newVal) => {
   height: 100%;
 
   // 图像
-  :deep(.avatar-uploader) {
+  // :deep(.avatar-uploader) {
+  //   .avatar {
+  //     width: 178px;
+  //     height: 178px;
+  //     display: block;
+  //   }
+
+  //   .el-upload {
+  //     border: 1px dashed var(--el-border-color);
+  //     border-radius: 6px;
+  //     cursor: pointer;
+  //     position: relative;
+  //     overflow: hidden;
+  //     transition: var(--el-transition-duration-fast);
+  //   }
+
+  //   .el-upload:hover {
+  //     border-color: var(--el-color-primary);
+  //   }
+  // }
+
+  .avatar-show {
+    // .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+    border: 1px dashed #cbcbcb;
+    border-radius: 10px;
+    margin-left: 20px;
+
+    // }
     .avatar {
-      width: 178px;
-      height: 178px;
+      width: 100%;
+      height: 100%;
       display: block;
-    }
-
-    .el-upload {
-      border: 1px dashed var(--el-border-color);
-      border-radius: 6px;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: var(--el-transition-duration-fast);
-    }
-
-    .el-upload:hover {
-      border-color: var(--el-color-primary);
     }
   }
 

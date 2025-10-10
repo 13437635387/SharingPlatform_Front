@@ -6,18 +6,19 @@ import { onMounted, ref } from 'vue';
 const list = ref([])
 const getList = async () => {
   const res = await getArticleList()
-  list.value = res.data  
+  list.value = res.data
 }
 
 onMounted(() => { getList() })
 const obj = {
-  list:list.value
+  list: list.value
 }
 
 </script>
 <template>
   <div class="home">
-    <showPanel :list="list" :isUser="false" ></showPanel>
+    <el-empty v-if="!list.length"></el-empty>
+    <showPanel :list="list" :isUser="false" v-else></showPanel>
   </div>
 </template>
 <style lang="less" scoped>
