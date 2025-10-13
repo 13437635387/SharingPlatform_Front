@@ -12,6 +12,7 @@ type userTokenType = {
   status: number;
   message: string;
   token: string;
+  refreshToken: string;
 };
 
 const userStore = useUserStore()
@@ -75,7 +76,10 @@ const login = async (formEl: FormInstance | undefined) => {
   userStore.username = formModel.value.username
   userStore.password = formModel.value.password
 
-  userStore.token = (res as unknown as userTokenType).token//报错说要先转换为unknown,虽然不知道为什么但是改了就不标红了
+  userStore.token = (res as unknown as userTokenType).token
+  userStore.refreshToken = (res as unknown as userTokenType).refreshToken
+  console.log('loginToken', res);
+
   ElMessage.success('登录成功！')
   router.push({ path: '/home' })
 

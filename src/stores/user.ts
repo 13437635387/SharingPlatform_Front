@@ -1,3 +1,4 @@
+// import { refreshTokenService } from "@/api/token";
 import { ElMessage } from "element-plus";
 import { defineStore } from "pinia";
 import { ref } from "vue";
@@ -13,6 +14,7 @@ export const useUserStore = defineStore(
     );
     const userId = ref();
     const token = ref("");
+    const refreshToken = ref("");
     // 清空用户信息：退出登录
     const logout = () => {
       username.value = "";
@@ -21,9 +23,19 @@ export const useUserStore = defineStore(
       userPic.value =
         "https://ts1.tc.mm.bing.net/th/id/OIP-C.UyaBji0AU_6M3VDA2F1RvgAAAA?r=0&rs=1&pid=ImgDetMain&o=7&rm=3";
       token.value = "";
+      refreshToken.value = "";
       userId.value = "";
       ElMessage.success("已退出!");
     };
+
+    // // 刷新token函数
+    // const refreshTokenFun = async () => {
+    //   console.log("fdfd");
+
+    //   const res = await refreshTokenService();
+    //   console.log("store:", res);
+    // };
+
     return {
       username,
       password,
@@ -31,7 +43,9 @@ export const useUserStore = defineStore(
       userPic,
       userId,
       token,
+      refreshToken,
       logout,
+      // refreshTokenFun,
     };
   },
   {

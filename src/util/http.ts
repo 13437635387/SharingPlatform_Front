@@ -13,13 +13,6 @@ import { ElMessage } from "element-plus";
 // 基地址
 const baseURL: string = "http://localhost:8080";
 
-// // 返回类型结构
-// interface apiResult<T = any> {
-//   status: number;
-//   message: string;
-//   data: T;
-// }
-
 const userStore = useUserStore();
 
 const instance: AxiosInstance = axios.create({
@@ -47,6 +40,7 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response: AxiosResponse) => {
     // console.log("4334343");
+    console.log("response:", response);
 
     if (response.data.status === 0) {
       return response.data;
@@ -56,7 +50,6 @@ instance.interceptors.response.use(
     }
   },
   (error: AxiosError) => {
-    // console.log("Axios Error:", error.response);
     const errorMessage = (error.response?.data as { message?: string })?.message || "服务器错误";
     ElMessage.error(errorMessage);
     // 401 跳转登录
