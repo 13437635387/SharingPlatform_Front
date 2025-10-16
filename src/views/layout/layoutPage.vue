@@ -69,8 +69,16 @@ const toggleCollapse = () => {
             </el-button>
           </span>
         </div>
+        <!-- 管理员界面 -->
+        <!-- <el-button type="primary" text>管理员界面</el-button> -->
         <!-- 用户 -->
         <div class="user">
+
+          <!-- 管理员界面  -->
+          <el-button type="primary" link style="margin-right: 5px; height: 100%; line-height: 100%; font-size: 12px;"
+            @click="router.push('/admin')">管理员</el-button>
+          <!-- <el-button type="primary" link
+            style="margin-right: 3px;height: 100%;line-height: 100%;font-size: 12px;">管理员界面</el-button> -->
           <el-dropdown>
             <div class="user-info">
               <el-avatar size="default" :src="userStore.userPic"></el-avatar>
@@ -156,7 +164,7 @@ const toggleCollapse = () => {
         left: 50%;
         transform: translate(-50%);
         display: inline-flex;
-        width: 500px;
+        width: 470px;
         background-color: rgb(247, 247, 247);
         border-radius: 40px;
         height: 40px;
@@ -188,7 +196,7 @@ const toggleCollapse = () => {
       }
 
       // 媒体查询
-      @media (max-width: 900px) {
+      @media (max-width: 920px) {
         .search {
           width: 300px;
           left: 0%;
@@ -201,6 +209,11 @@ const toggleCollapse = () => {
       .user {
         position: absolute;
         right: 20px;
+
+        height: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
 
         .user-info {
           display: flex;

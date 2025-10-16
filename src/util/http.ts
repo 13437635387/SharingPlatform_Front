@@ -82,7 +82,7 @@ instance.interceptors.response.use(
       if ((error.config as MyRequestConfig)?._isRefresh) {
         // 刷新token请求都失败了，说明刷新token也过期了，直接跳登录
         router.push("/login");
-        ElMessage.error("登录已过期");
+        ElMessage.error("请登录");
         return Promise.reject(error);
       }
       await refreshTokenFun();
