@@ -9,7 +9,6 @@ import { addArticleService, addArticleVideoService, addLargeFileArticleService, 
 import { useUserStore } from '@/stores/user'
 import SparkMD5 from 'spark-md5'
 import type { FileChunkType } from '@/types/user'
-import axios from 'axios';
 
 type currentDetailInfoType = {
   user_pic: string,
@@ -22,6 +21,9 @@ type currentDetailInfoType = {
 }
 
 const props = defineProps<{ panelType: string, currentDetailInfo?: currentDetailInfoType }>()
+
+const fullscreenLoading = ref(false)//loading
+
 // 表单
 const ruleFormRef = ref()
 const formData = ref<{
@@ -211,7 +213,9 @@ const verify = async (fileHash: string, fileName: string) => {
 
 const videoUpload = async () => {
   console.log('开始上传：', new Date());
+  console.time('分片+hash时间');
 
+  fullscreenLoading.value = true
   fileChunksList.value = []//清空分片数组
   const rawValue = toRaw(videoUploadFile.value)
   console.log(rawValue);
@@ -227,7 +231,9 @@ const videoUpload = async () => {
   // 计算哈希
   const fileHash = await sparkHash()
   console.log('fileHash', fileHash);
-  console.log('哈希计算完成', new Date());
+  // console.log('哈希计算完成', new Date());
+  console.timeEnd('分片+hash时间');
+
 
 
   // 秒传   ---如果改文件已经上传过就不再分片，直接添加文章
@@ -244,6 +250,7 @@ const videoUpload = async () => {
         content: formData.value.content,
       })
       console.log('成功添加', res);
+      fullscreenLoading.value = false
       ElMessage.success(res.message)
     } else {
       // 编辑文章
@@ -256,6 +263,7 @@ const videoUpload = async () => {
         id: props.currentDetailInfo!.id
       })
       console.log('成功编辑', res);
+      fullscreenLoading.value = false
       window.location.reload()
       ElMessage.success(res.message)
 
@@ -277,6 +285,7 @@ const videoUpload = async () => {
     })
     // 上传视频切片
     await uploadToBehind(data.existChunks)
+    fullscreenLoading.value = false
     console.log('结束上传：', new Date());
   }
 }
@@ -286,6 +295,7 @@ const submitForm = async () => {
   await ruleFormRef.value.validate()
   // 如果是图像直接提交
   if (isPic.value) {
+    fullscreenLoading.value = true
     //转变为FormData格式
     const fd = new FormData()
     for (const key in formData.value) {
@@ -296,6 +306,7 @@ const submitForm = async () => {
     //发布和编辑分开处理
     if (props.panelType === 'public') {
       await addArticleService(fd)
+      fullscreenLoading.value = false
       ElMessage.success('新增成功!')
     }
     if (props.panelType === 'edit') {
@@ -303,6 +314,7 @@ const submitForm = async () => {
         fd.append('id', String(props.currentDetailInfo.id))
         const res = await editArticleService(fd)
         console.log('res:', res);
+        fullscreenLoading.value = false
         ElMessage.success('编辑成功!')
         // 刷新页面
         window.location.reload()
@@ -368,7 +380,8 @@ watch(() => props.currentDetailInfo, (newVal) => {
         </div>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submitForm" size="large" style="width:150px;">提交</el-button>
+        <el-button type="primary" @click="submitForm" size="large" style="width:150px;"
+          v-loading.fullscreen.lock="fullscreenLoading">提交</el-button>
       </el-form-item>
     </el-form>
   </el-card>
@@ -399,12 +412,6 @@ watch(() => props.currentDetailInfo, (newVal) => {
             </el-icon>
           </div>
         </div>
-        <!-- <el-upload :show-file-list="false" class="avatar-uploader" :auto-upload="false" @change="handleChange">
-          <img v-if="backupURL" :src="backupURL" class="avatar" />
-          <el-icon v-else class="avatar-uploader-icon">
-            <Plus />
-          </el-icon>
-        </el-upload> -->
       </el-form-item>
       <el-form-item label="文章内容" prop="content">
         <div class="editor">
@@ -414,7 +421,8 @@ watch(() => props.currentDetailInfo, (newVal) => {
         </div>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submitForm" size="large" style="width:150px;">提交</el-button>
+        <el-button type="primary" @click="submitForm" size="large" style="width:150px;"
+          v-loading.fullscreen.lock="fullscreenLoading">提交</el-button>
       </el-form-item>
     </el-form>
   </el-card>
