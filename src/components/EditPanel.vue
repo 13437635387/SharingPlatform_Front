@@ -235,7 +235,6 @@ const videoUpload = async () => {
   console.timeEnd('分片+hash时间');
 
 
-
   // 秒传   ---如果改文件已经上传过就不再分片，直接添加文章
   const data = await verify(fileHash as string, rawValue.name)
   const isExists = data.isExists

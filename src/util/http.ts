@@ -1,6 +1,5 @@
 // import { refreshTokenService } from "@/api/token";
 import router from "@/router";
-import { useUserStore } from "@/stores/user";
 
 import axios, {
   AxiosError,
@@ -11,13 +10,14 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { ElMessage } from "element-plus";
+import { useUserStore } from "@/stores/user";
 
 type MyRequestConfig = InternalAxiosRequestConfig & { _isRefresh?: boolean };
 
 // 基地址
 const baseURL: string = "http://localhost:8080";
 
-const userStore = useUserStore();
+// const userStore = useUserStore();
 
 const instance: AxiosInstance = axios.create({
   baseURL,
@@ -43,6 +43,7 @@ const refreshTokenFun = async () => {
 // 请求拦截器
 instance.interceptors.request.use(
   (config: InternalAxiosRequestConfig & { _isRefresh?: boolean }) => {
+    const userStore = useUserStore();
     if (userStore.token) {
       config.headers = {
         ...config.headers,
@@ -73,6 +74,7 @@ instance.interceptors.response.use(
     }
   },
   async (error: AxiosError) => {
+    const userStore = useUserStore();
     const errorMessage = (error.response?.data as { message?: string })?.message || "服务器错误";
 
     // 401 跳转登录
