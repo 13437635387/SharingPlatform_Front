@@ -19,9 +19,6 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);
 }
 
-// app.mixin({
-//   setup: autoCountTime,
-// });
 app.mixin(autoInjectMountTime);
 
 app.mount("#app");
