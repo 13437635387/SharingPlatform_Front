@@ -92,27 +92,27 @@ const fileChunksList = ref<Blob[]>([])//原始分片数组
 const fileDetailList = ref<FileChunkType[]>([])//分片详细信息数组
 
 
-// 计算文件哈希(增量算法，完整计算分片)
-const sparkHash = () => {
-  return new Promise((resolve) => {
-    const spark = new SparkMD5.ArrayBuffer()
-    function _read(i: number) {
+// // 计算文件哈希(增量算法，完整计算分片)
+// const sparkHash = () => {
+//   return new Promise((resolve) => {
+//     const spark = new SparkMD5.ArrayBuffer()
+//     function _read(i: number) {
 
-      if (i >= fileChunksList.value.length) {
-        resolve(spark.end())
-        return
-      }
-      const blob = fileChunksList.value[i]
-      const fileReader = new FileReader()
-      fileReader.readAsArrayBuffer(blob)
-      fileReader.onload = (e) => {
-        spark.append(e.target?.result as ArrayBuffer)
-        _read(i + 1)
-      }
-    }
-    _read(0)
-  })
-}
+//       if (i >= fileChunksList.value.length) {
+//         resolve(spark.end())
+//         return
+//       }
+//       const blob = fileChunksList.value[i]
+//       const fileReader = new FileReader()
+//       fileReader.readAsArrayBuffer(blob)
+//       fileReader.onload = (e) => {
+//         spark.append(e.target?.result as ArrayBuffer)
+//         _read(i + 1)
+//       }
+//     }
+//     _read(0)
+//   })
+// }
 
 const uploadToBehind = async (existChunks = []) => {
   // 构造FormDatas数组
@@ -234,23 +234,62 @@ const videoUpload = async () => {
   console.time('分片+hash时间');
 
   fullscreenLoading.value = true
-  fileChunksList.value = []//清空分片数组
+  fileChunksList.value = [] // 清空分片数组
   const rawValue = toRaw(videoUploadFile.value)
-  console.log(rawValue);
+  console.log(rawValue)
 
+  // 视频里的简洁实现：把分片任务分配给 THREAD_COUNT 个 worker，每个 worker 负责一段索引区间
   const totalFileSize = rawValue.size // 文件总大小
-  let current = 0// 当前分片位置
-  console.log('fileChunksList:', fileChunksList.value);
+  const chunkCount = Math.ceil(totalFileSize / CHUNK_SIZE)
+  const THREAD_COUNT = Math.min(navigator.hardwareConcurrency || 4, chunkCount)// 使用核心数和分片数的较小值作为线程数
 
-  while (current < totalFileSize) {
-    fileChunksList.value.push(rawValue.slice(current, current + CHUNK_SIZE))
-    current += CHUNK_SIZE
+  // 创建多个 worker，分配分片计算任务，收集结果并扁平化返回
+  const cutFile = (file: File) => {
+    return new Promise<any[]>((resolve, reject) => {
+      const result: any[] = []
+      let finishCount = 0
+      for (let i = 0; i < THREAD_COUNT; i++) {
+        const worker = new Worker(new URL('../util/worker.js', import.meta.url), { type: 'module' })
+        // 计算该 worker 负责的分片区间
+        const start = Math.floor((i * chunkCount) / THREAD_COUNT)
+        let end = Math.floor(((i + 1) * chunkCount) / THREAD_COUNT)
+        if (end > chunkCount) end = chunkCount
+
+        worker.postMessage({ file, CHUNK_SIZE, start, end })
+        worker.onmessage = (e: MessageEvent) => {
+          // worker 返回一个数组（该区间的 chunk 列表）
+          result[i] = e.data
+          worker.terminate()
+          finishCount++
+          if (finishCount === THREAD_COUNT) {
+            // 扁平化并返回
+            resolve((result as any[]).flat())
+          }
+        }
+        worker.onerror = (err) => {
+          worker.terminate()
+          reject(err)
+        }
+      }
+    })
   }
-  // 计算哈希
-  const fileHash = await sparkHash()
-  console.log('fileHash', fileHash);
-  // console.log('哈希计算完成', new Date());
-  console.timeEnd('分片+hash时间');
+
+  // 调用 cutFile 获取所有 chunk 对象（每个对象包含 index, blob, hash）
+  const chunks = await cutFile(rawValue as File)
+  // 按 index 排序
+  chunks.sort((a: any, b: any) => a.index - b.index)
+
+  // 用每个分片的 hash 拼接后再计算整体 hash（避免在主线程读大量 ArrayBuffer）
+  const spark = new SparkMD5()
+  for (const c of chunks) {
+    spark.append(c.hash)
+  }
+  const fileHash = spark.end()
+
+  // 把 blob 列表赋给 fileChunksList 保持原逻辑不变
+  fileChunksList.value = chunks.map((c: any) => c.blob)
+  console.log('fileHash', fileHash)
+  console.timeEnd('分片+hash时间')
 
 
   // 秒传   ---如果改文件已经上传过就不再分片，直接添加文章
