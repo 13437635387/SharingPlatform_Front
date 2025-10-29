@@ -2,7 +2,6 @@
   "recommendations": [
     "Vue.volar",
     "dbaeumer.vscode-eslint",
-    "EditorConfig.EditorConfig",
-    "github.copilot"
+    "EditorConfig.EditorConfig"
   ]
 }
