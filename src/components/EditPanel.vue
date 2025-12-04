@@ -67,7 +67,7 @@ const backupURL = ref('')//图片回显
 const isPic = ref(true)//是否是图片
 const videoUploadFile = ref()//视频文件
 const handleChange: UploadProps['onChange'] = (uploadFile) => {
-  console.log('uploadFile:', uploadFile);
+  // console.log('uploadFile:', uploadFile);
   if (uploadFile.raw!.type.startsWith('image/')) {
     isPic.value = true
     formData.value.imgURL = uploadFile.raw as Blob
@@ -108,7 +108,6 @@ const uploadToBehind = async (existChunks = []) => {
       formData.append('fileName', item.fileName)
       return formData
     })
-  console.log('formDatas:', formDatas);
   // 发送请求
   const maxCount = 6; // 最大并发数
   const total = formDatas.length;
@@ -158,7 +157,7 @@ const uploadToBehind = async (existChunks = []) => {
 
   // 4. 等待所有任务完成
   await allDone;
-  console.log('所有分片上传完成');
+  // console.log('所有分片上传完成');
 
   // 发送切片合并请求
   await mergeRequest({
@@ -176,7 +175,6 @@ const uploadToBehind = async (existChunks = []) => {
       user_id: userStore.userId,
       content: formData.value.content,
     })
-    console.log(res);
     ElMessage.success(res.message)
   }
   else {
@@ -189,7 +187,6 @@ const uploadToBehind = async (existChunks = []) => {
       content: formData.value.content,
       id: props.currentDetailInfo!.id
     })
-    console.log(res);
     ElMessage.success(res.message)
     window.location.reload()
   }
@@ -209,13 +206,13 @@ const verify = async (fileHash: string, fileName: string) => {
 }
 
 const videoUpload = async () => {
-  console.log('开始上传：', new Date());
-  console.time('分片+hash时间');
+  // console.log('开始上传：', new Date());
+  // console.time('分片+hash时间');
 
   fullscreenLoading.value = true
   fileChunksList.value = [] // 清空分片数组
   const rawValue = toRaw(videoUploadFile.value)
-  console.log(rawValue)
+  // console.log(rawValue)
 
   //把分片任务分配给 THREAD_COUNT 个 worker，每个 worker 负责一段索引区间
   const totalFileSize = rawValue.size // 文件总大小
@@ -267,7 +264,7 @@ const videoUpload = async () => {
 
   // 把 blob 列表赋给 fileChunksList 保持原逻辑不变
   fileChunksList.value = chunks.map((c: any) => c.blob)
-  console.log('fileHash', fileHash)
+  // console.log('fileHash', fileHash)
   console.timeEnd('分片+hash时间')
 
 
@@ -284,7 +281,7 @@ const videoUpload = async () => {
         user_id: userStore.userId,
         content: formData.value.content,
       })
-      console.log('成功添加', res);
+      // console.log('成功添加', res);
       fullscreenLoading.value = false
       ElMessage.success(res.message)
     } else {
@@ -297,7 +294,6 @@ const videoUpload = async () => {
         content: formData.value.content,
         id: props.currentDetailInfo!.id
       })
-      console.log('成功编辑', res);
       fullscreenLoading.value = false
       window.location.reload()
       ElMessage.success(res.message)
@@ -306,7 +302,6 @@ const videoUpload = async () => {
     formData.value = { title: '', imgURL: new Blob(), content: '' }
     backupURL.value = '' // 清空图片回显
     editor.value?.setHTML('')//清空编辑器内容
-    console.log('结束上传：', new Date());
 
   } else {
     // 构造详细分片数组
@@ -321,7 +316,7 @@ const videoUpload = async () => {
     // 上传视频切片
     await uploadToBehind(data.existChunks)
     fullscreenLoading.value = false
-    console.log('结束上传：', new Date());
+    // console.log('结束上传：', new Date());
   }
 }
 
@@ -348,7 +343,7 @@ const submitForm = async () => {
       if (props.currentDetailInfo && props.currentDetailInfo.id !== undefined) {
         fd.append('id', String(props.currentDetailInfo.id))
         const res = await editArticleService(fd)
-        console.log('res:', res);
+        // console.log('res:', res);
         fullscreenLoading.value = false
         ElMessage.success('编辑成功!')
         // 刷新页面

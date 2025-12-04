@@ -25,7 +25,6 @@ const customUpload = async (options: UploadRequestOptions) => {
         Authorization: userStore.token, // 手动传递 token
       },
     });
-    console.log('上传成功：', response);
     const res = await getUserAvatarService();
     userStore.userPic = 'http://localhost:8080' + res.data
     ElMessage.success('修改成功!')
@@ -82,7 +81,6 @@ const confirm = async (formEl: FormInstance | undefined) => {
     gender: formModel.value.gender,
     age: formModel.value.age,
   })
-  console.log(res);
   userStore.username = formModel.value.username
   userStore.password = formModel.value.password
   userStore.userGender = formModel.value.gender
@@ -95,7 +93,6 @@ const isShow = ref(false)//是否展示右侧修改页面
 const userArticleList = ref([])
 const getUserArticles = async () => {
   const res = await getUserArticleList(userStore.userId);
-  console.log(res);
   userArticleList.value = res.data
 }
 getUserArticles()

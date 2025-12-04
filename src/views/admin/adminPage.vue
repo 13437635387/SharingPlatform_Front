@@ -186,7 +186,6 @@ onMounted(async () => {
   genderData.value[1].value = res.data[1].count
 
   const res2 = await getEchartsAge()
-  console.log(res2);
   ageData.value = res2.data.map((item: any) => {
     return {
       value: item.count,

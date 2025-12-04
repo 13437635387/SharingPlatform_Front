@@ -29,7 +29,6 @@ provide('searchResult', searchList)
 const searchThings = async () => {
   if (search_content.value.trim()) {
     const res = await searchArticleService(search_content.value.trim())
-    console.log(res);
     searchList.value = res.data
     router.push('/search') // 跳转到搜索页面 
   }

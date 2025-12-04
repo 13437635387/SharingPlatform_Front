@@ -11,7 +11,6 @@ const list = inject('searchResult') as Array<{
   user_id: number
 }> || [] // 获取跨级传递的数据;
 
-console.log(list);
 
 
 </script>

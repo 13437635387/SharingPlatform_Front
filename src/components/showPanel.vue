@@ -19,7 +19,6 @@ type listType = {
 }
 const props = defineProps<{ list: listType[], isUser: boolean }>()
 const emit = defineEmits(['reloadList'])
-console.log(props);
 
 
 // 移动端配置（详细看文档）
@@ -89,7 +88,6 @@ const handleClose = () => {
   isShowDetail.value = false
   // 关闭前如果是视频需要重置
   if (videoRef.value) {
-    console.log('erdshdi');
 
     // 先暂停播放
     videoRef.value.pause();

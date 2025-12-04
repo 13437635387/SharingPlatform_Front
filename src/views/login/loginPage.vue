@@ -78,7 +78,6 @@ const login = async (formEl: FormInstance | undefined) => {
 
   userStore.token = (res as unknown as userTokenType).token
   userStore.refreshToken = (res as unknown as userTokenType).refreshToken
-  console.log('loginToken', res);
 
   ElMessage.success('登录成功！')
   router.push({ path: '/home' })
@@ -103,7 +102,6 @@ const register = async (formEl: FormInstance | undefined) => {
     username: formModel.value.username,
     password: formModel.value.password
   })
-  console.log(res);
 
   ElMessage.success('注册成功！')
 }
