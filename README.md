@@ -1,6 +1,10 @@
-# 简介
+## 简介
 
 轻红是自主设计并全栈开发的轻量化创意内容展示平台，涵盖图文 / 视频内容上传管理、搜索浏览、实时聊天大厅及管理员数据可视化后台，聚焦优质内容高效传播与沉浸式浏览体验。
+
+## 效果演示
+
+[点击下载演示视频](https://my-demo-video.oss-cn-hangzhou.aliyuncs.com/%E8%BD%BB%E7%BA%A2%E6%BC%94%E7%A4%BA%E8%A7%86%E9%A2%91.mp4)
 
 ## 特点
 
@@ -35,7 +39,3 @@ pnpm dev
 ```
 
 注意：该仓库仅包含前端代码，若想运行，请一并下载并运行后端代码 👉：[后端项目地址(github)](https://github.com/13437635387/SharingPlatform_Behind)
-
-## 效果演示
-
-[点击下载演示视频](https://my-demo-video.oss-cn-hangzhou.aliyuncs.com/%E8%BD%BB%E7%BA%A2%E6%BC%94%E7%A4%BA%E8%A7%86%E9%A2%91.mp4)
